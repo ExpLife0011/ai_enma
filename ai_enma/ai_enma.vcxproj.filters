@@ -93,4 +93,7 @@
       <Filter>Заголовочные файлы\ai_enma\ai_enma_plugin</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\LICENSE" />
+  </ItemGroup>
 </Project>
