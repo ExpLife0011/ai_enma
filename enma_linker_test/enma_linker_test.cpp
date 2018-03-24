@@ -7,7 +7,10 @@ int main(){
 
     ai_enma enma;
     std::vector<BYTE> out_exe;
-    ai_enma_module config_image(pe_image(std::string("..\\app for test\\loader.exe")));
+
+    pe_image mainpe = pe_image(std::string("..\\app for test\\loader.exe"));
+
+    ai_enma_module config_image(mainpe);
     ai_enma_module added_image(pe_image(std::string("..\\app for test\\TestDll.dll")));
     added_image.add_ext_name("user32.dll");
 

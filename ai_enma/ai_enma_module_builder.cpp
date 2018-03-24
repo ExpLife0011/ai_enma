@@ -7,45 +7,43 @@ ai_enma_module_builder::ai_enma_module_builder(ai_enma_module& module, bool buil
 
     out_image.clear();
 
-    IMAGE_DOS_HEADER dos_header;
-    ZeroMemory(&dos_header,sizeof(dos_header));
+    std::vector<BYTE> dos_header;
+    get_dos_header(module.get_image_expanded(), out_image);
 
-    dos_header.e_magic = IMAGE_DOS_SIGNATURE;
-    dos_header.e_lfanew = sizeof(IMAGE_DOS_HEADER);
+    dos_stub_size = out_image.size();
+    nt_stub_size = (module.get_image_expanded().image.is_x32_image() ? sizeof(IMAGE_NT_HEADERS32) : sizeof(IMAGE_NT_HEADERS64));
+    first_section_offset = align_sections(module.get_image_expanded());
 
-    out_image.resize(sizeof(IMAGE_DOS_HEADER));
+    out_image.resize(first_section_offset);
 
-    memcpy(out_image.data(), &dos_header, sizeof(dos_header));
-   
     build_directories(module.get_image_expanded(), build_relocations);
+    
     
     if (module.get_image_expanded().image.is_x32_image()) {
         IMAGE_NT_HEADERS32 header;
-        get_nt_header32(module.get_image_expanded(), header);
-        out_image.resize(sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32));
-        memcpy(out_image.data() + sizeof(IMAGE_DOS_HEADER), &header, sizeof(header));
+        get_nt_header32(module.get_image_expanded(), header);   
+        memcpy(out_image.data() + dos_stub_size, &header, sizeof(header));
     }
     else {
         IMAGE_NT_HEADERS64 header;
         get_nt_header64(module.get_image_expanded(), header);
-        out_image.resize(sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS64));
-        memcpy(out_image.data() + sizeof(IMAGE_DOS_HEADER), &header, sizeof(header));
+        memcpy(out_image.data() + dos_stub_size, &header, sizeof(header));
     }
 
-    for (auto& section_ : module.get_image_expanded().image.get_sections()) {
+    for (unsigned int section_idx = 0; section_idx < module.get_image_expanded().image.get_sections_number(); section_idx++) {
         IMAGE_SECTION_HEADER section_hdr = { 0 };
+        
+        memcpy(section_hdr.Name, module.get_image_expanded().image.get_section_by_idx(section_idx)->get_name().c_str(), 
+            min(module.get_image_expanded().image.get_section_by_idx(section_idx)->get_name().length(), 8));
 
-        memcpy(section_hdr.Name, section_->get_name().c_str(), min(section_->get_name().length(), 8));
-        section_hdr.Misc.VirtualSize = section_->get_virtual_size();
-        section_hdr.VirtualAddress = section_->get_virtual_address();
-        section_hdr.SizeOfRawData = section_->get_size_of_raw_data();
-        section_hdr.PointerToRawData = section_->get_pointer_to_raw();
-        section_hdr.Characteristics = section_->get_characteristics();
+        section_hdr.Misc.VirtualSize = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_virtual_size();
+        section_hdr.VirtualAddress = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_virtual_address();
+        section_hdr.SizeOfRawData = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_size_of_raw_data();
+        section_hdr.PointerToRawData = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_pointer_to_raw();
+        section_hdr.Characteristics = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_characteristics();
 
-        out_image.resize(out_image.size() + sizeof(IMAGE_SECTION_HEADER));
-        memcpy(out_image.data() + out_image.size() - sizeof(IMAGE_SECTION_HEADER), &section_hdr, sizeof(section_hdr));
+        memcpy(out_image.data() + dos_stub_size + nt_stub_size + sizeof(IMAGE_SECTION_HEADER) * section_idx, &section_hdr, sizeof(section_hdr));
     } 
-    out_image.resize(ALIGN_UP(out_image.size(), 0x200));
 
     for (auto& section_ : module.get_image_expanded().image.get_sections()) {
         out_image.resize(out_image.size() + section_->get_size_of_raw_data());
@@ -66,8 +64,6 @@ ai_enma_module_builder::~ai_enma_module_builder() {
 
 
 void ai_enma_module_builder::build_directories(pe_image_expanded& expanded_image, bool build_relocations) {
-
-    align_sections(expanded_image);
 
     if (expanded_image.imports.get_libs().size() ||
         expanded_image.exports.get_number_of_functions() ||
@@ -191,8 +187,7 @@ void ai_enma_module_builder::process_relocations(pe_image_expanded& expanded_ima
 
 DWORD ai_enma_module_builder::align_sections(pe_image_expanded& expanded_image) {
 
-    DWORD first_section_raw = ALIGN_UP((sizeof(IMAGE_DOS_HEADER) +
-        sizeof(IMAGE_NT_HEADERS32) +
+    DWORD first_section_raw = ALIGN_UP((dos_stub_size + nt_stub_size +
         (sizeof(IMAGE_SECTION_HEADER) * expanded_image.image.get_sections_number())), 0x200);
 
     DWORD current_section_raw = first_section_raw;
@@ -206,6 +201,60 @@ DWORD ai_enma_module_builder::align_sections(pe_image_expanded& expanded_image) 
     }
 
     return first_section_raw;
+}
+
+#define GET_RICH_HASH(x,i) (((x) << (i)) | ((x) >> (32 - (i))))
+
+void ai_enma_module_builder::get_dos_header(pe_image_expanded& expanded_image, std::vector<BYTE> &header) {
+
+    std::vector<BYTE> dos_stub;
+    if (expanded_image.image.get_dos_stub().get_dos_stub().size()) {
+        dos_stub = expanded_image.image.get_dos_stub().get_dos_stub();
+    }
+    else {
+        IMAGE_DOS_HEADER dos_header;
+        ZeroMemory(&dos_header, sizeof(dos_header));
+        dos_header.e_magic = IMAGE_DOS_SIGNATURE;
+        //todo 
+    }
+
+    header = dos_stub;
+
+    if (expanded_image.image.get_rich_data().size()) {
+        header.resize(header.size() + 
+            (sizeof(DWORD) * 4) +                                             //DanS header
+            (sizeof(DWORD) * 2)*expanded_image.image.get_rich_data().size() + //rich items
+            (sizeof(DWORD) * 4)                                               //Rich sign
+        );
+
+        DWORD * rich_dw = (DWORD *)&header.data()[dos_stub.size()];
+
+        rich_dw[0] = 0x536E6144; //DanS
+        for (unsigned int item_idx = 0; item_idx < expanded_image.image.get_rich_data().size(); item_idx++) {
+            rich_dw[4 + (item_idx * 2)] = (expanded_image.image.get_rich_data()[item_idx].get_version() & 0xFFFF) |
+                ((expanded_image.image.get_rich_data()[item_idx].get_number() & 0xFFFF) << 16);
+            rich_dw[4 + (item_idx * 2) + 1] = expanded_image.image.get_rich_data()[item_idx].get_times();
+        }
+        rich_dw[4 + (expanded_image.image.get_rich_data().size() * 2)] = 0x68636952;//Rich
+
+        DWORD rich_hash = dos_stub.size();
+
+        for (unsigned int i = 0; i < dos_stub.size(); i++) { //dos header + stub
+            if (i >= 0x3C && i < 0x40) { continue; }//skip e_lfanew
+
+            rich_hash += GET_RICH_HASH((DWORD)header.data()[i],i);
+        }
+        for (unsigned int i = 0; i < expanded_image.image.get_rich_data().size(); i++){ //Rich struct
+            rich_hash += GET_RICH_HASH(rich_dw[4 + (i * 2)], rich_dw[4 + (i * 2) + 1]);
+        }
+
+        for (unsigned int i = 0; i < 4 + (expanded_image.image.get_rich_data().size() * 2);i++) {
+            rich_dw[i] ^= rich_hash;
+        }
+        rich_dw[4 + (expanded_image.image.get_rich_data().size() * 2) + 1] = rich_hash;//Rich hash
+    }
+   
+    PIMAGE_DOS_HEADER(header.data())->e_lfanew = header.size();
 }
 
 
@@ -257,7 +306,7 @@ void ai_enma_module_builder::get_nt_header32(pe_image_expanded& expanded_image, 
         (expanded_image.image.get_sections()[expanded_image.image.get_sections_number() - 1]->get_virtual_address() +
             expanded_image.image.get_sections()[expanded_image.image.get_sections_number() - 1]->get_virtual_size()), 0x1000);
 
-    header.OptionalHeader.SizeOfHeaders = align_sections(expanded_image);
+    header.OptionalHeader.SizeOfHeaders = first_section_offset;
       
 
     header.OptionalHeader.CheckSum = 0;
@@ -327,7 +376,7 @@ void ai_enma_module_builder::get_nt_header64(pe_image_expanded& expanded_image, 
         (expanded_image.image.get_sections()[expanded_image.image.get_sections_number() - 1]->get_virtual_address() +
             expanded_image.image.get_sections()[expanded_image.image.get_sections_number() - 1]->get_virtual_size()), 0x1000);
 
-    header.OptionalHeader.SizeOfHeaders = align_sections(expanded_image);
+    header.OptionalHeader.SizeOfHeaders = first_section_offset;
 
 
     header.OptionalHeader.CheckSum = 0;
