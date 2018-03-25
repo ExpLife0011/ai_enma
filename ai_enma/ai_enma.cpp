@@ -7,7 +7,7 @@ ai_enma::~ai_enma(){}
 
 enma_ltable_errors ai_enma::exec_enma(std::vector<BYTE>& out_image) {
 
-    bool main_has_relocations = main_module->get_image_relocations().size();
+    bool main_has_relocations = main_module->get_image_relocations().size() != 0;
     unsigned int linker_ret = ai_enma_module_linker().link_modules(plugins, extended_modules, main_module);
 
     if (linker_ret) {

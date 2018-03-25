@@ -139,7 +139,7 @@ bool ai_enma_module_linker::get_export_references(std::vector<export_references>
         }
     }
 
-    return export_refs.size();
+    return export_refs.size() != 0;
 }
 
 
