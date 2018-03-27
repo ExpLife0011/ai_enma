@@ -1,0 +1,1 @@
+enma_linker_test.exe module=Project1.exe module=ice9.dll extname=user32.dll
