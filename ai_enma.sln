@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ai_enma", "ai_enma\ai_enma.vcxproj", "{BE06C668-CB2A-4C7E-AD8F-BAF6EBFFEC4B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "enma_linker_test", "enma_linker_test\enma_linker_test.vcxproj", "{DBB02AA0-40FD-42AC-A964-FAC57B5F4BE6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "enma_linker_console", "enma_linker_console\enma_linker_console.vcxproj", "{DBB02AA0-40FD-42AC-A964-FAC57B5F4BE6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BE06C668-CB2A-4C7E-AD8F-BAF6EBFFEC4B} = {BE06C668-CB2A-4C7E-AD8F-BAF6EBFFEC4B}
 	EndProjectSection

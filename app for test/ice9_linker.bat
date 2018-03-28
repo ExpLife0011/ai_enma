@@ -1,0 +1,1 @@
+enma_linker_console.exe module=Project1.exe module=ice9.dll extname=user32.dll outname=ice9_protected.exe
