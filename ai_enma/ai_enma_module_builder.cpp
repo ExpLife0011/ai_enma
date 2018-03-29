@@ -246,9 +246,9 @@ std::vector<BYTE> ai_enma_module_builder::get_dos_header(pe_image_expanded& expa
         
         rich_dw[0] = 0x536E6144; //DanS
         for (unsigned int item_idx = 0; item_idx < expanded_image.image.get_rich_data().size(); item_idx++) {
-            rich_dw[4 + (item_idx * 2)] = (expanded_image.image.get_rich_data()[item_idx].get_version() & 0xFFFF) |
-                ((expanded_image.image.get_rich_data()[item_idx].get_number() & 0xFFFF) << 16);
-            rich_dw[4 + (item_idx * 2) + 1] = expanded_image.image.get_rich_data()[item_idx].get_times();
+            rich_dw[4 + (item_idx * 2)] = (expanded_image.image.get_rich_data()[item_idx].get_compiler_build() & 0xFFFF) |
+                ((expanded_image.image.get_rich_data()[item_idx].get_type() & 0xFFFF) << 16);
+            rich_dw[4 + (item_idx * 2) + 1] = expanded_image.image.get_rich_data()[item_idx].get_count();
         }
         rich_dw[4 + (expanded_image.image.get_rich_data().size() * 2)] = 0x68636952;//Rich
 
