@@ -130,7 +130,7 @@ bool ai_enma_module_linker::merge_relocations() {
 
                     if (src_func.is_import_by_name()) {
                         if (get_import_func_index(main_module->get_image_imports(),
-                            src_library.get_name(), src_func.get_name(),
+                            src_library.get_library_name(), src_func.get_func_name(),
                             dst_lib_idx, dst_func_idx)) {
 
                             main_module->get_image_relocations().add_item(
@@ -143,7 +143,7 @@ bool ai_enma_module_linker::merge_relocations() {
                     }
                     else {
                         if (get_import_func_index(main_module->get_image_imports(),
-                            src_library.get_name(), src_func.get_ordinal(),
+                            src_library.get_library_name(), src_func.get_ordinal(),
                             dst_lib_idx, dst_func_idx)) {
 
                             main_module->get_image_relocations().add_item(

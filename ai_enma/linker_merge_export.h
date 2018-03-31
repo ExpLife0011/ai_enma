@@ -22,13 +22,13 @@ bool ai_enma_module_linker::get_export_references(std::vector<export_references>
                 bool is_name_match = false;
 
                 //check for main export
-                if (nocase_cmp(module_export.get_name(), import_lib.get_name())) { //check for original name
-                    current_export_lib_name = module_export.get_name();
+                if (nocase_cmp(module_export.get_library_name(), import_lib.get_library_name())) { //check for original name
+                    current_export_lib_name = module_export.get_library_name();
                     is_name_match = true;
                 }
                 else {
                     for (auto& ext_name : modules_pool[module_idx]->get_extended_names()) {//check for ext names
-                        if (nocase_cmp(ext_name, import_lib.get_name())) {
+                        if (nocase_cmp(ext_name, import_lib.get_library_name())) {
                             current_export_lib_name = ext_name;
                             is_name_match = true;
                             break;
@@ -40,7 +40,7 @@ bool ai_enma_module_linker::get_export_references(std::vector<export_references>
                     for (auto& ext_export : modules_pool[module_idx]->get_extended_exports()) {//check for ext modules
 
                         for (auto& ext_name : ext_export.extended_names) {
-                            if (nocase_cmp(ext_name, import_lib.get_name())) {
+                            if (nocase_cmp(ext_name, import_lib.get_library_name())) {
                                 current_export_lib_name = ext_name;
                                 is_name_match = true;
                                 break;
@@ -55,7 +55,7 @@ bool ai_enma_module_linker::get_export_references(std::vector<export_references>
                                 for (auto & export_item : module_export.get_items()) {
                                     if (import_func.is_import_by_name() == export_item.has_name()) {
                                         if (import_func.is_import_by_name()) {
-                                            if (import_func.get_name() == export_item.get_name()) {
+                                            if (import_func.get_func_name() == export_item.get_func_name()) {
                                                 export_refs.push_back({
                                                     0,
                                                     current_export_lib_name,
@@ -99,7 +99,7 @@ bool ai_enma_module_linker::get_export_references(std::vector<export_references>
                         for (auto & export_item : module_export.get_items()) { 
                             if (import_func.is_import_by_name() == export_item.has_name()) {
                                 if (import_func.is_import_by_name()) {
-                                    if (import_func.get_name() == export_item.get_name()) {
+                                    if (import_func.get_func_name() == export_item.get_func_name()) {
                                         export_refs.push_back({
                                             0,
                                             current_export_lib_name,
@@ -200,7 +200,7 @@ bool ai_enma_module_linker::merge_export() {
        
         if (ref.export_item.has_name()){
             if (!get_import_func_index(main_module->get_image_imports(),
-                ref.lib_name, ref.export_item.get_name(),
+                ref.lib_name, ref.export_item.get_func_name(),
                 ref_lib_idx, ref_func_idx)) {
                 
                 return false; // =\ why?
@@ -243,7 +243,7 @@ bool ai_enma_module_linker::merge_export() {
 
             auto & import_lib = new_import_table.get_libs()[import_lib_idx];
 
-            if (nocase_cmp(ref.lib_name , import_lib.get_name())) {
+            if (nocase_cmp(ref.lib_name , import_lib.get_library_name())) {
 
                 for (unsigned int import_func_idx = 0, original_import_func_idx = 0;
                     import_func_idx < import_lib.get_items().size();
@@ -252,7 +252,7 @@ bool ai_enma_module_linker::merge_export() {
                     auto & import_func = import_lib.get_items()[import_func_idx];
 
                     if (ref.export_item.has_name()) {
-                        if (import_func.is_import_by_name() && import_func.get_name() == ref.export_item.get_name()) {
+                        if (import_func.is_import_by_name() && import_func.get_func_name() == ref.export_item.get_func_name()) {
                             import_lib.get_items().erase(import_lib.get_items().begin() + import_func_idx);
                             import_func_idx--;
                         }

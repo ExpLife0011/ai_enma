@@ -19,14 +19,14 @@ bool ai_enma_module_linker::switch_import_refs(pe_image_expanded& expanded_image
             for (unsigned int new_import_lib_idx = 0; new_import_lib_idx < new_import_table.get_libs().size(); new_import_lib_idx++) {
                 imported_library& new_import_lib = new_import_table.get_libs()[new_import_lib_idx];
 
-                if (nocase_cmp(new_import_lib.get_name(), reloc_ref_lib.get_name())) {
+                if (nocase_cmp(new_import_lib.get_library_name(), reloc_ref_lib.get_library_name())) {
 
                     for (unsigned int new_import_func_idx = 0; new_import_func_idx < new_import_lib.get_items().size(); new_import_func_idx++) {
                         imported_func& new_import_func = new_import_lib.get_items()[new_import_func_idx];
 
                         if (reloc_ref_func.is_import_by_name()) {
 
-                            if (new_import_func.is_import_by_name() && new_import_func.get_name() == reloc_ref_func.get_name()) {
+                            if (new_import_func.is_import_by_name() && new_import_func.get_func_name() == reloc_ref_func.get_func_name()) {
                                 reloc_item.relocation_id = SET_RELOCATION_ID_IAT(new_import_lib_idx, new_import_func_idx);
                                 goto next_reloc_ref;
                             }
@@ -136,18 +136,18 @@ bool ai_enma_module_linker::merge_import() {
 	for (auto& module : extended_modules) {
 		for (auto & lib : module->get_image_imports().get_libs()) {
 			imported_library* main_lib;
-			if (main_module->get_image_imports().get_imported_lib(lib.get_name(), main_lib)) {
+			if (main_module->get_image_imports().get_imported_lib(lib.get_library_name(), main_lib)) {
 
 				for (auto & func : lib.get_items()) {
 					imported_library* main_lib_;
 					imported_func * main_func_;
 					if (func.is_import_by_name()) {
-						if (!main_module->get_image_imports().get_imported_func(lib.get_name(), func.get_name(), main_lib_, main_func_)) {
+						if (!main_module->get_image_imports().get_imported_func(lib.get_library_name(), func.get_func_name(), main_lib_, main_func_)) {
 							main_lib->add_item(func);
 						}
 					}
 					else {
-						if (!main_module->get_image_imports().get_imported_func(lib.get_name(), func.get_ordinal(), main_lib_, main_func_)) {
+						if (!main_module->get_image_imports().get_imported_func(lib.get_library_name(), func.get_ordinal(), main_lib_, main_func_)) {
 							main_lib->add_item(func);
 						}
 					}
@@ -167,15 +167,15 @@ bool ai_enma_module_linker::merge_import() {
 
         for (unsigned int lib_idx = main_lib_idx + 1; lib_idx < new_import_table.get_libs().size(); lib_idx++) {
 
-            if (nocase_cmp(new_import_table.get_libs()[main_lib_idx].get_name(),
-                new_import_table.get_libs()[lib_idx].get_name())) {
+            if (nocase_cmp(new_import_table.get_libs()[main_lib_idx].get_library_name(),
+                new_import_table.get_libs()[lib_idx].get_library_name())) {
 
                 for (auto& func_item : new_import_table.get_libs()[lib_idx].get_items()) {
                     for (auto& func_item_main : new_import_table.get_libs()[main_lib_idx].get_items()) {
                         if (func_item.is_import_by_name() == func_item_main.is_import_by_name()) {
 
                             if (func_item.is_import_by_name()) {
-                                if (func_item.get_name() == func_item_main.get_name()) {
+                                if (func_item.get_func_name() == func_item_main.get_func_name()) {
                                     goto func_found;
                                 }
                             }

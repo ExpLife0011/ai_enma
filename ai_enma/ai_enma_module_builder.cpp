@@ -31,8 +31,8 @@ ai_enma_module_builder::ai_enma_module_builder(ai_enma_module& module, bool buil
     for (unsigned int section_idx = 0; section_idx < module.get_image_expanded().image.get_sections_number(); section_idx++) {
         IMAGE_SECTION_HEADER section_hdr = { 0 };
         
-        memcpy(section_hdr.Name, module.get_image_expanded().image.get_section_by_idx(section_idx)->get_name().c_str(), 
-            min(module.get_image_expanded().image.get_section_by_idx(section_idx)->get_name().length(), 8));
+        memcpy(section_hdr.Name, module.get_image_expanded().image.get_section_by_idx(section_idx)->get_section_name().c_str(), 
+            min(module.get_image_expanded().image.get_section_by_idx(section_idx)->get_section_name().length(), 8));
 
         section_hdr.Misc.VirtualSize = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_virtual_size();
         section_hdr.VirtualAddress = module.get_image_expanded().image.get_section_by_idx(section_idx)->get_virtual_address();
@@ -82,7 +82,7 @@ void ai_enma_module_builder::build_directories(pe_image_expanded& expanded_image
         bool was_build = false;
 
         pe_section dir_section;
-        dir_section.set_name(std::string(".rdata"));
+        dir_section.set_section_name(std::string(".rdata"));
         dir_section.set_readable(true).set_writeable(true).set_executable(false);
         dir_section.set_pointer_to_raw(
             ALIGN_UP(
@@ -106,11 +106,11 @@ void ai_enma_module_builder::build_directories(pe_image_expanded& expanded_image
             was_build = true;
         }
         if (expanded_image.imports.get_libs().size()) {                                            //build import
-            build_import_table(expanded_image.image, dir_section, expanded_image.imports);
+            build_import_table(expanded_image.image, dir_section, expanded_image.imports,true);
             was_build = true;
         }
         if (expanded_image.tls.get_address_of_index()) {                                           //build tls
-            build_tls_table(expanded_image.image, dir_section, expanded_image.tls, expanded_image.relocations);
+            build_tls_full(expanded_image.image, dir_section, expanded_image.tls, expanded_image.relocations);
             was_build = true;
         }
         if (!expanded_image.load_config.is_empty()) {                                              //build load config
@@ -136,7 +136,7 @@ void ai_enma_module_builder::build_directories(pe_image_expanded& expanded_image
     
     if (expanded_image.resources.get_entry_list().size()) {                                        //build resources
         pe_section rsrc_section;
-        rsrc_section.set_name(std::string(".rsrc"));
+        rsrc_section.set_section_name(std::string(".rsrc"));
         rsrc_section.set_readable(true).set_writeable(false).set_executable(false);
         rsrc_section.set_pointer_to_raw(
             ALIGN_UP(

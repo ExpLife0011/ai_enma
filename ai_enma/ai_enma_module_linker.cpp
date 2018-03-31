@@ -138,12 +138,12 @@ inline bool get_import_func_index(import_table& imports,
     for (unsigned int current_lib_idx = 0; current_lib_idx < imports.get_libs().size(); current_lib_idx++) {
         imported_library & current_library = imports.get_libs()[current_lib_idx];
 
-        if (nocase_cmp(current_library.get_name(), lib_name)) {
+        if (nocase_cmp(current_library.get_library_name(), lib_name)) {
 
             for (unsigned int current_func_idx = 0; current_func_idx < current_library.get_items().size(); current_func_idx++) {
                 imported_func& current_func = current_library.get_items()[current_func_idx];
 
-                if (current_func.is_import_by_name() && current_func.get_name() == funcname) {
+                if (current_func.is_import_by_name() && current_func.get_func_name() == funcname) {
 
                     lib_idx = current_lib_idx;
                     func_idx = current_func_idx;
@@ -165,7 +165,7 @@ inline bool get_import_func_index(import_table& imports,
     for (unsigned int current_lib_idx = 0; current_lib_idx < imports.get_libs().size(); current_lib_idx++) {
         imported_library & current_library = imports.get_libs()[current_lib_idx];
 
-        if (nocase_cmp(current_library.get_name(), lib_name)) {
+        if (nocase_cmp(current_library.get_library_name(), lib_name)) {
 
             for (unsigned int current_func_idx = 0; current_func_idx < current_library.get_items().size(); current_func_idx++) {
                 imported_func& current_func = current_library.get_items()[current_func_idx];
